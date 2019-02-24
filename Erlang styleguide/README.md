@@ -9,10 +9,10 @@
 Item      |   Naming convention    |    Example
 ----------|------------------------|-----------
 Modules   | snake_case             | elevator_interface.erl
-Variables | PascalCase             | ButtonType
+Variables | PascalCased            | ButtonType
 Functions | snake_case             | set_order_button_light()
-Arguments | PascalCase             | set_order_button_light(Floor)
-Macros    | ALL_CAPITALS           | CALL_TIMEOUT
+Arguments | PascalCased            | set_order_button_light(Floor)
+Macros    | ALL_CAPITALS           | RECV_PORT
 
 # Formatting
 ## Conditional statements
@@ -21,7 +21,9 @@ Macros    | ALL_CAPITALS           | CALL_TIMEOUT
 if
   Num1 > Num2 ->
     % Do something;
+  Num1 < Num2 ->
+    % Do something else;
   true ->
-    % Do something else
+    % else-statement
 end.
 ```
