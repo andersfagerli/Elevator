@@ -1,6 +1,6 @@
 # Description
 
-![Modules and interface](/Images/flowchart.png)
+![Modules and interfaces](Images/flowchart.png)
 
 ## Network module
 * Establishes UDP connection to remote elevators for message passing
