@@ -1,5 +1,5 @@
 -module(fsm).
--export([start/0]).
+-export([start/1]).
 
 
 start(Pid) ->
@@ -11,6 +11,7 @@ init(Pid) ->
   receive
     {at_floor, Floor} ->
       Pid ! init_complete,
+      io:format("Init complete\n"),
       idle(Pid)
   end.
 

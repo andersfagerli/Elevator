@@ -1,7 +1,7 @@
 -module(elevator).
 -export([start/0]).
 
--define(?SLEEP_PERIOD, 100).
+-define(SLEEP_PERIOD, 100).
 
 start() ->
   % Do something
@@ -19,10 +19,12 @@ start() ->
 fsm_listener() ->
   receive
     init ->
-      elevator_interface:set_motor_direction(driver, down);
+        elevator_interface:set_motor_direction(driver, down);
     init_complete ->
-      elevator_interface:set_motor_direction(driver, stop)
-  end.
+        io:format("Stopped\n"),
+        elevator_interface:set_motor_direction(driver, stop)
+  end,
+  fsm_listener().
 
 %%% Elevator interface %%%
 init_floor_sensing(DriverPid) ->
@@ -33,8 +35,8 @@ floor_sensing(DriverPid, PrevFloor) ->
   Floor = elevator_interface:get_floor_sensor_state(DriverPid),
   case Floor of
     PrevFloor ->
-      timer:sleep(?SLEEP_PERIOD);
+        timer:sleep(?SLEEP_PERIOD);
     _ ->
-      fsm ! {at_floor, Floor} % at_floor may be "between_floors"
+        fsm ! {at_floor, Floor} % at_floor may be "between_floors"
   end,
-  floor_sensing(Floor).
+  floor_sensing(DriverPid, Floor).
