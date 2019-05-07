@@ -1,58 +1,73 @@
 -module(fsm).
--export([start/1,
-        send_new_floor/2,
-        send_order_finished/1,
-        send_door_open/1,
-        send_order_direction/2]).
-
-%%% Start %%%
-start(FsmListener) ->
-  spawn(fun() -> init(FsmListener) end).
-
-%%% Init %%%
-init(FsmListener) ->
-  event_init(FsmListener),
-  receive
-    {new_floor, Floor} ->
-      idle(FsmListener)
-  end.
+-export([
+  move/2,
+  stop/1,
+  close_door/1,
+  idle/1,
+  open_door/1]).
 
 %%% States %%%
 idle(FsmListener) ->
-  event_stop(FsmListener),
+  FsmListener ! {direction, stop},
+  storage:update_elevator_behavior(node(), idle),
+  storage:update_elevator_direction(node(), stop),
+  %%order:assign_order(),
   receive
     {door, open} ->
       door_open(FsmListener);
-    {order, Direction} ->
-      moving(FsmListener, Direction)
+    {direction, Direction} ->
+      moving(FsmListener, Direction);
+    _ ->
+      idle(FsmListener)
   end.
 
 moving(FsmListener, Direction) ->
-  event_moving(FsmListener,Direction),
+  FsmListener ! {direction, Direction},
+  storage:update_elevator_behavior(node(), moving),
+  storage:update_elevator_direction(node(), Direction),
+  %%order:assign_order(),
   receive
-    {order, finished} ->
+    {direction, stop} ->
       idle(FsmListener);
-    {order, NewDirection} ->
-      moving(FsmListener, NewDirection)
+    {direction, NewDirection} ->
+      moving(FsmListener, NewDirection);
+    {door, open} ->
+      door_open(FsmListener);
+    _ ->
+      moving(FsmListener, Direction)
+  after
+    15000 ->
+      io:fwrite("MOTOR ERROR, Halting program"),
+      halt()
   end.
 
 door_open(FsmListener) ->
-  event_open_door(FsmListener),
-  timer:sleep(3000),
-  event_close_door(FsmListener),
-  idle(FsmListener).
+  FsmListener ! {direction, stop},
+  FsmListener ! {door,open},
+  storage:update_elevator_behavior(node(), doorOpen),
+  %%order:assign_order(),
+  receive
+    {door,close} ->
+      FsmListener ! {door,close},
+      idle(FsmListener);
+    {direction, stop} ->
+      FsmListener ! {door,close},
+      idle(FsmListener);
+    {direction, Direction}->
+      FsmListener ! {door,close},
+      moving(FsmListener, Direction);
+    _ ->
+      door_open(FsmListener)
+  end.
 
-
-
+% Messages
+% {direction, up}
+% {direction, down}
+% {direction, stop}
+% {door, open}
+% {door,open}
 %%% Events %%%
-event_init(FsmListener)                 -> FsmListener ! init.
-event_stop(FsmListener)                 -> FsmListener ! {drive,stop}.
-event_open_door(FsmListener)            -> FsmListener ! {door,open}.
-event_close_door(FsmListener)           -> FsmListener ! {door,close}.
-event_moving(FsmListener, Direction)    -> FsmListener ! {drive,Direction}.
-
-%%% Module interface %%%
-send_door_open(FsmPid)                  -> FsmPid ! {door, open}.
-send_order_finished(FsmPid)             -> FsmPid ! {order, finished}.
-send_new_floor(FsmPid, Floor)           -> FsmPid ! {new_floor, Floor}.
-send_order_direction(FsmPid, Direction) -> FsmPid ! {order, Direction}.
+move(Fsm, Direction) -> Fsm ! {direction, Direction}.
+stop(Fsm) -> Fsm ! {direction, stop}.
+close_door(Fsm) -> Fsm ! {door,close}.
+open_door(Fsm) -> Fsm ! {door,open}.

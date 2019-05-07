@@ -1,0 +1,13 @@
+make:all(),
+main:start(),
+observer:start().
+
+
+io:fwrite("sens_to_mnesia()~n")
+
+
+Remember to set to correct. ip adrress and shit
+erl -name elev2@10.100.23.238 -setcookie 12345
+
+net_kernel:set_net_ticktime(5).
+

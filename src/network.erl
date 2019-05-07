@@ -1,22 +1,21 @@
 -module(network).
 
--export([start/0]).
+-export([init_broadcast/1, init_broadcast/0,
+init_receive/1, init_receive/0]).
 
--define(COOKIE, 'elev').
 -define(BROADCAST_IP, {255,255,255,255}).
--define(RECV_PORT, 5677).
--define(SEND_PORT, 5678).
--define(SLEEP_PERIOD, 3000).
+-define(RECV_PORT, 8971).
+-define(SEND_PORT, 8972).
+-define(SLEEP_PERIOD, 500).
 
-%%% Start %%%
-start() ->
-  erlang:set_cookie(node(),?COOKIE),
-  spawn(fun() -> init_broadcast() end),
-  spawn(fun() -> init_receive() end).
 
-%%% Broadcast %%%
+%%% BROADCAST %%%
 init_broadcast() ->
   {ok,SendSocket} = gen_udp:open(?SEND_PORT, [list, {active, false}, {broadcast, true}]),
+  broadcast_node(SendSocket).
+
+init_broadcast(SendPort) ->
+  {ok,SendSocket} = gen_udp:open(SendPort, [list, {active, false}, {broadcast, true}]),
   broadcast_node(SendSocket).
 
 broadcast_node(Socket) ->
@@ -24,9 +23,14 @@ broadcast_node(Socket) ->
   timer:sleep(?SLEEP_PERIOD),
   broadcast_node(Socket).
 
-%%% Receive %%%
+
+%%% RECEIVE %%%
 init_receive() ->
-  {ok, RecvSocket} = gen_udp:open(?RECV_PORT, [list, {active, false}, {broadcast, true}]),
+  {ok, RecvSocket} = gen_udp:open(?RECV_PORT, [list, {active, false}]),
+  connect_to_nodes(RecvSocket).
+
+init_receive(RecvPort) ->
+  {ok, RecvSocket} = gen_udp:open(RecvPort, [list, {active, false}]),
   connect_to_nodes(RecvSocket).
 
 connect_to_nodes(Socket) ->
@@ -37,5 +41,18 @@ connect_to_nodes(Socket) ->
       ok;
     false ->
       net_adm:ping(Node),
+      case mnesia:system_info(is_running) of
+        yes ->
+          %%MIGHT BE BUGGY DELETE IF PROBLEMS!!!!
+          %%mnesia:stop(),
+          %%timer:sleep(100),
+          %%mnesia:start();
+          ok;
+        _ ->
+          ok
+      end
   end,
+  timer:sleep(500),
+
+
   connect_to_nodes(Socket).
