@@ -1,3 +1,7 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Supplied file %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -module(elevator_interface).
 
 -behaviour(gen_server).
@@ -142,8 +146,3 @@ handle_call(get_obstruction_switch_state, _From, Socket) ->
 			   {ok, [9, 1, 0, 0]} -> active
 			end,
     {reply, ObstructionState, Socket}.
-    
-    
-			   
-    
-    

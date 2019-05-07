@@ -2,19 +2,21 @@
 
 -export([start/0]).
 
+-define(COOKIE, 'elev').
 -define(BROADCAST_IP, {255,255,255,255}).
--define(RECV_PORT, 8971).
--define(SEND_PORT, 8972).
--define(SLEEP_PERIOD, 5000).
+-define(RECV_PORT, 5677).
+-define(SEND_PORT, 5678).
+-define(SLEEP_PERIOD, 3000).
 
+%%% Start %%%
 start() ->
+  erlang:set_cookie(node(),?COOKIE),
   spawn(fun() -> init_broadcast() end),
-  spawn(fun() -> init_receive() end),
-  spawn(fun() -> debug() end).
+  spawn(fun() -> init_receive() end).
 
-%%% BROADCAST %%%
+%%% Broadcast %%%
 init_broadcast() ->
-  {ok,SendSocket} = gen_udp:open(?SEND_PORT, [list, {active, false}]),
+  {ok,SendSocket} = gen_udp:open(?SEND_PORT, [list, {active, false}, {broadcast, true}]),
   broadcast_node(SendSocket).
 
 broadcast_node(Socket) ->
@@ -22,26 +24,18 @@ broadcast_node(Socket) ->
   timer:sleep(?SLEEP_PERIOD),
   broadcast_node(Socket).
 
-
-%%% RECEIVE %%%
+%%% Receive %%%
 init_receive() ->
-  {ok, RecvSocket} = gen_udp:open(?RECV_PORT, [list, {active, false}]),
+  {ok, RecvSocket} = gen_udp:open(?RECV_PORT, [list, {active, false}, {broadcast, true}]),
   connect_to_nodes(RecvSocket).
 
 connect_to_nodes(Socket) ->
-  {ok, {Address, Port, NodeName}} = gen_udp:recv(Socket, 0),
+  {ok, {_Address, _Port, NodeName}} = gen_udp:recv(Socket, 0),
   Node = list_to_atom(NodeName),
-  net_adm:ping(Node),
-  connect_to_nodes(Socket).
-
-
-%%% DEBUG %%%
-debug() ->
-  timer:sleep(?SLEEP_PERIOD),
-  case nodes() =:= [] of
+  case lists:member(Node, [node()|nodes()]) of
     true ->
-      io:format("Not connected\n");
+      ok;
     false ->
-      io:format("Connected to: ~p~n",nodes())
+      net_adm:ping(Node),
   end,
-  debug().
+  connect_to_nodes(Socket).
